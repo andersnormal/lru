@@ -150,7 +150,7 @@ func (l *LRUCache) Len() int {
 
 // Purge is purging the cache.
 func (l *LRUCache) Purge() {
-	for k, _ := range l.items {
+	for k := range l.items {
 		delete(l.items, k)
 	}
 	l.list.Init()

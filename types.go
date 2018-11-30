@@ -43,10 +43,12 @@ type LRU interface {
 	Purge()
 }
 
+// Sized is the interface to a cache size calculation.
 type Sized interface {
 	Size() int64
 }
 
+// LRUCache represents the instance of an LRU cache.
 type LRUCache struct {
 	size  int
 	items map[interface{}]*list.Element
