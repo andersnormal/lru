@@ -16,6 +16,11 @@ tasks:
     cmds:
       - go test -v -race ./...
 
+  benchmark:
+    desc: Benchmark the cache.
+    cmds:
+      - go test -bench=.
+
   cov:
     desc: Generate test converage.
     cmds:

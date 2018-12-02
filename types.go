@@ -2,11 +2,12 @@ package lru
 
 import (
 	"container/list"
+	"sync"
 	"time"
 )
 
-// LRU is the interface for the LRU cache
-type LRU interface {
+// Cache is the interface for the LRU cache
+type Cache interface {
 	// Adds a value to the cache, or updates an item in the cache.
 	// It returns true if an item needed to be removed for storing the new item.
 	Add(key interface{}, value interface{}, ttl int64) bool
@@ -41,6 +42,13 @@ type LRU interface {
 
 	// Purge is purging the full cache.
 	Purge()
+}
+
+// cache is a thread-safe, fixed size LRU cache with TTL.
+type SimpleCache struct {
+	sync.RWMutex
+
+	lru Cache
 }
 
 // Sized is the interface to a cache size calculation.

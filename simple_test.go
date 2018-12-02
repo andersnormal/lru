@@ -2,17 +2,14 @@ package lru
 
 import (
 	"errors"
+	"math/rand"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-const (
-	size = 64
-)
-
-func TestLRU(t *testing.T) {
+func TestCache(t *testing.T) {
 	tests := []struct {
 		desc string
 		ttl  int64
@@ -29,7 +26,7 @@ func TestLRU(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			l, err := NewLRU(size)
+			l, err := New(size)
 
 			assert.NoError(t, err)
 
@@ -90,7 +87,7 @@ func TestLRU(t *testing.T) {
 	}
 }
 
-func TestLRUFetch(t *testing.T) {
+func TestCacheFetch(t *testing.T) {
 	tests := []struct {
 		desc  string
 		value interface{}
@@ -120,7 +117,7 @@ func TestLRUFetch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			l, err := NewLRU(1)
+			l, err := New(1)
 
 			assert.NoError(t, err)
 
@@ -140,7 +137,7 @@ func TestLRUFetch(t *testing.T) {
 	}
 }
 
-func TestLRUAdd(t *testing.T) {
+func TestCacheAdd(t *testing.T) {
 	type item struct {
 		key   interface{}
 		value interface{}
@@ -193,6 +190,105 @@ func TestLRUAdd(t *testing.T) {
 			}
 
 			assert.Equal(t, tt.expectRemove, ok)
+		})
+	}
+}
+
+func BenchmarkCache_Rand(b *testing.B) {
+	tests := []struct {
+		desc string
+		size int
+		ttl  int64
+	}{
+		{
+			desc: "with size of 4096 and no ttl set",
+			size: 4096,
+			ttl:  0,
+		},
+		{
+			desc: "with size of 8092 items and no ttl set",
+			size: 8092,
+			ttl:  0,
+		},
+	}
+
+	for _, tt := range tests {
+		b.Run(tt.desc, func(b *testing.B) {
+			l, err := New(tt.size)
+			assert.NoError(b, err)
+
+			trace := make([]int64, b.N*2)
+			for i := 0; i < b.N*2; i++ {
+				trace[i] = rand.Int63() % 32768
+			}
+
+			b.ResetTimer()
+
+			var hit, miss int
+			for i := 0; i < 2*b.N; i++ {
+				if i%2 == 0 {
+					l.Add(trace[i], trace[i], tt.ttl)
+				} else {
+					_, ok := l.Get(trace[i])
+					if ok {
+						hit++
+					} else {
+						miss++
+					}
+				}
+			}
+			b.Logf("hit: %d miss: %d ratio: %f", hit, miss, float64(hit)/float64(miss))
+		})
+	}
+}
+
+func BenchmarkCache_Freq(b *testing.B) {
+	tests := []struct {
+		desc string
+		size int
+		ttl  int64
+	}{
+		{
+			desc: "with size of 4096 and no ttl set",
+			size: 4096,
+			ttl:  0,
+		},
+		{
+			desc: "with size of 8092 items and no ttl set",
+			size: 8092,
+			ttl:  0,
+		},
+	}
+
+	for _, tt := range tests {
+		b.Run(tt.desc, func(b *testing.B) {
+			l, err := New(8192)
+			assert.NoError(b, err)
+
+			trace := make([]int64, b.N*2)
+			for i := 0; i < b.N*2; i++ {
+				if i%2 == 0 {
+					trace[i] = rand.Int63() % 16384
+				} else {
+					trace[i] = rand.Int63() % 32768
+				}
+			}
+
+			b.ResetTimer()
+
+			for i := 0; i < b.N; i++ {
+				l.Add(trace[i], trace[i], tt.ttl)
+			}
+			var hit, miss int
+			for i := 0; i < b.N; i++ {
+				_, ok := l.Get(trace[i])
+				if ok {
+					hit++
+				} else {
+					miss++
+				}
+			}
+			b.Logf("hit: %d miss: %d ratio: %f", hit, miss, float64(hit)/float64(miss))
 		})
 	}
 }

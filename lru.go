@@ -5,11 +5,11 @@ import (
 	"time"
 )
 
-var _ LRU = (*LRUCache)(nil)
+var _ Cache = (*LRUCache)(nil)
 
 // NewLRU returns a new instance of the LRU cache with
 // a certain size of elements that can be stored in time.
-func NewLRU(size int) (LRU, error) {
+func NewLRU(size int) (Cache, error) {
 	if size <= 0 {
 		return nil, ErrNoPositiveSize
 	}
